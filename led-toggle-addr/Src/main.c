@@ -1,44 +1,63 @@
-// the user led is connected to port A pin 5 (PA5)
+#include <stdint.h>
 
-// definition of addresses on STM32
+
 #define PERIPH_BASE				(0x40000000UL)
 #define AHB1PERIPH_OFFSET		(0x00020000UL)
 #define AHB1PERIPH_BASE			(PERIPH_BASE + AHB1PERIPH_OFFSET)
-
 #define GPIOA_OFFSET			(0x0000UL)
 #define GPIOA_BASE				(AHB1PERIPH_BASE + GPIOA_OFFSET)
-
 #define RCC_OFFSET				(0x00003800UL)
 #define RCC_BASE				(AHB1PERIPH_BASE + RCC_OFFSET)
 #define AHB1_ENBL_R_OFFSET		(0x30UL)
-#define RCC_AHB1_ENBL_R			(*(volatile unsigned int*)(RCC_BASE + AHB1_ENBL_R_OFFSET))
-
-#define MODE_R_OFFSET 			(0x00UL)
-#define GPIOA_MODE_R			(*(volatile unsigned int*)(GPIOA_BASE + MODE_R_OFFSET))
-
-//#define GPIOA_MODE 				(1U<<10) // make mode reg be output
+#define MODE_R_OFFSET			(0x00UL)
 #define GPIOA_ENBL				(1U<<0) // turn on bit 0
-
-#define ODR_OFFSET 				(0x14UL)
-#define GPIOA_OD_R				(*(volatile unsigned int*)(GPIOA_BASE + ODR_OFFSET))
+#define ODR_OFFSET				(0x14UL)
 
 #define PIN5					(1U<<5)
 #define LED_PIN					PIN5
 
-// 0x4002 0000 - 0x4002 03FF
+typedef struct {
+	volatile uint32_t MODER;
+	volatile uint32_t OTYPER;
+	volatile uint32_t OSPEEDR;
+	volatile uint32_t PUPDR;
+	volatile uint32_t IDR;
+	volatile uint32_t ODR;
+	volatile uint32_t BSRR;
+	volatile uint32_t LCKR;
+	volatile uint32_t AFRL;
+	volatile uint32_t AFRH;
+} GPIO_TypeDef;
+
+typedef struct {
+	volatile uint32_t DUMMY[12];
+	volatile uint32_t AHB1ENR;
+} RCC_TypeDef;
+
+#define RCC					((RCC_TypeDef*)RCC_BASE)
+#define GPIOA				((GPIO_TypeDef*)GPIOA_BASE)
 
 int main(void)
 {
 	// enable clock access to GPIOA
-	RCC_AHB1_ENBL_R |= GPIOA_ENBL; // the bit OR is basically adding these two registers
+	RCC->AHB1ENR |= GPIOA_ENBL;
 
 	// set PA5 as output pin
-	GPIOA_MODE_R |= (1U<<10);
-	GPIOA_MODE_R &= ~(1U<<11);
-
+	GPIOA->MODER |= (1U<<10);
+	GPIOA->MODER &= ~(1U<<11);
 
 	for (;;) {
 		// toggle the led
-		GPIOA_OD_R |= LED_PIN;
+		for (int i = 0; i < 1000000; i++);
+		GPIOA->ODR ^= LED_PIN;
 	}
 }
+
+
+
+
+
+
+
+
+
